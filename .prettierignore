@@ -1,0 +1,31 @@
+# Ignore artifacts:
+build
+dist
+node_modules
+.out
+.next
+coverage
+
+# Ignore config files and logs:
+.env
+.env.local
+*.log
+
+# Ignore specific files:
+package-lock.json
+yarn.lock
+.pnp.*
+
+# Ignore temporary files:
+*.tmp
+*.temp
+*.swp
+
+# Ignore specific IDE folders:
+.vscode/
+.idea/
+.DS_Store
+
+# Ignore static and generated files:
+public/static
+public/assets

@@ -1,0 +1,15 @@
+name: craft-market-3d
+
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo:latest
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: 123456
+    volumes:
+      - mongodb_data_container:/data/db
+volumes:
+  mongodb_data_container:
