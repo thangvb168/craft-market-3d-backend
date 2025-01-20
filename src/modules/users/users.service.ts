@@ -4,8 +4,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/user.schema';
 import { Model } from 'mongoose';
-import { hashPassword } from '@/utils/bcrypt';
-import bmq from '@/utils/bmq';
+import { hashPassword } from '@/common/utils/bcrypt';
+import bmq from '@/common/utils/bmq';
 
 @Injectable()
 export class UsersService {
@@ -80,6 +80,40 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  async findByName(name: string) {
+    const user = await this.userModel
+      .findOne({
+        name,
+      })
+      .select(this.publicField);
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return user;
+  }
+
+  async findByEmail(email: string) {
+    const user = await this.userModel
+      .findOne({
+        email,
+      })
+      .select(this.publicField)
+      .lean();
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return user;
+  }
+
+  async findPasswordByEmail(email: string) {
+    const user = await this.userModel.findOne({ email }).lean();
+    return user.password;
   }
 
   async update(updateUserDto: UpdateUserDto) {
