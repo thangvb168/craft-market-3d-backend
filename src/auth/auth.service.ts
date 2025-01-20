@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '@/modules/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { comparePassword } from '@/common/utils/bcrypt';
@@ -12,30 +12,27 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async signIn(email: string, pass: string): Promise<any> {
+  async validateUser(email: string, pass: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      return null;
     }
 
     const password = await this.usersService.findPasswordByEmail(email);
-    const isMatch = await comparePassword(pass, password);
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+    if (comparePassword(pass, password)) {
+      return user;
     }
+    return null;
+  }
 
-    const payload = {
-      sub: user._id,
-      username: user.name,
-      email: user.email,
-      role: user.role,
-    };
-    const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRES_IN'),
-    });
-
+  async login(user: any) {
+    const payload = { email: user.email, sub: user._id };
     return {
-      accessToken,
+      access_token: await this.jwtService.signAsync(payload, {
+        expiresIn: this.configService.get<string>(
+          'JWT_ACCESS_TOKEN_EXPIRES_IN',
+        ),
+      }),
     };
   }
 }
