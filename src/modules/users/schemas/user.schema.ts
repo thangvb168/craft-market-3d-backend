@@ -23,13 +23,13 @@ export class User {
   @Prop()
   avatar: string;
 
-  @Prop()
+  @Prop({ default: 'local' })
   accountType: string;
 
-  @Prop()
+  @Prop({ default: 'user' })
   role: string;
 
-  @Prop()
+  @Prop({ default: 'pending' })
   status: string;
 
   @Prop()
