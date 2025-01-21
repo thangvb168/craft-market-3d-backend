@@ -6,10 +6,17 @@ import { User } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { hashPassword } from '@/common/utils/bcrypt';
 import bmq from '@/common/utils/bmq';
+import { SignupAuthDto } from '@/auth/dto/signup-auth.dto';
+import { v4 as uuidv4 } from 'uuid';
+import * as dayjs from 'dayjs';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private mailerService: MailerService,
+  ) {}
 
   publicField: string[] = [
     '_id',
@@ -40,6 +47,10 @@ export class UsersService {
       address,
       avatar,
     });
+
+    if (!newUser) {
+      throw new BadRequestException('User not created');
+    }
 
     return {
       _id: newUser._id,
@@ -141,6 +152,55 @@ export class UsersService {
 
     return {
       _id,
+    };
+  }
+
+  async handleRegister(signupAuthDto: SignupAuthDto) {
+    const { name, email, password } = signupAuthDto;
+
+    const isEmailExist = await this.userModel.findOne({ email });
+    if (isEmailExist) {
+      throw new BadRequestException(
+        'Email already exists! Please use another email',
+      );
+    }
+
+    const hashPw = hashPassword(password);
+
+    const codeId = uuidv4();
+
+    const newUser = await this.userModel.create({
+      name,
+      email,
+      password: hashPw,
+      status: 'pending',
+      codeId,
+      codeExpired: dayjs().add(1, 'day'),
+    });
+
+    if (!newUser) {
+      throw new BadRequestException('User not created');
+    }
+
+    await this.mailerService.sendMail({
+      to: 'bathangvu@gmail.com',
+      subject: 'Confirm your email',
+      text: "Welcome to Craft Market 3D! Let's confirm your email address.",
+      template: 'register.hbs',
+      context: {
+        userName: name,
+        verificationToken: codeId,
+        verificationLink: `https://yourapp.com/verify/${codeId}`,
+        logoUrl: 'https://yourapp.com/logo.png',
+        currentYear: new Date().getFullYear(),
+        privacyPolicyUrl: 'https://yourapp.com/privacy',
+        termsUrl: 'https://yourapp.com/terms',
+        supportUrl: 'https://yourapp.com/support',
+      },
+    });
+
+    return {
+      _id: newUser._id,
     };
   }
 }

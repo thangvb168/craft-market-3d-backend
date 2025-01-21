@@ -3,6 +3,7 @@ import { UsersService } from '@/modules/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { comparePassword } from '@/common/utils/bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { SignupAuthDto } from './dto/signup-auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,5 +35,9 @@ export class AuthService {
         ),
       }),
     };
+  }
+
+  async register(signupAuthDto: SignupAuthDto) {
+    return await this.usersService.handleRegister(signupAuthDto);
   }
 }
