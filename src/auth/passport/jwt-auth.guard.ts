@@ -1,11 +1,16 @@
 import { IS_PUBLIC_KEY } from '@/decorators/public-route.decorator';
 import {
+  JwtInvalidTokenException,
+  JwtExpiredTokenException,
+} from '@/exceptions/jwt.exception';
+import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
+import { TokenExpiredError, JsonWebTokenError } from '@nestjs/jwt';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -27,9 +32,19 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   handleRequest(err, user, info) {
     if (err || !user) {
-      throw (
-        err || new UnauthorizedException('Access token is missing or invalid')
-      );
+      if (info instanceof TokenExpiredError) {
+        throw new JwtExpiredTokenException(
+          'Access token has expired. Please reset your access token',
+        );
+      } else if (info instanceof JsonWebTokenError) {
+        throw new JwtInvalidTokenException(
+          'Access token is invalid. Please login again',
+        );
+      } else {
+        throw new UnauthorizedException(
+          'Access token is missing. Please login again',
+        );
+      }
     }
     return user;
   }
