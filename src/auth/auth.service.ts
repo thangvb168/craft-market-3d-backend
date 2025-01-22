@@ -20,7 +20,8 @@ export class AuthService {
     }
 
     const password = await this.usersService.findPasswordByEmail(email);
-    if (comparePassword(pass, password)) {
+    const isMatch = await comparePassword(pass, password);
+    if (isMatch) {
       return user;
     }
     return null;
@@ -29,11 +30,14 @@ export class AuthService {
   async login(user: any) {
     const payload = { email: user.email, sub: user._id };
     return {
-      access_token: await this.jwtService.signAsync(payload, {
-        expiresIn: this.configService.get<string>(
-          'JWT_ACCESS_TOKEN_EXPIRES_IN',
-        ),
-      }),
+      user,
+      meta: {
+        access_token: await this.jwtService.signAsync(payload, {
+          expiresIn: this.configService.get<string>(
+            'JWT_ACCESS_TOKEN_EXPIRES_IN',
+          ),
+        }),
+      },
     };
   }
 

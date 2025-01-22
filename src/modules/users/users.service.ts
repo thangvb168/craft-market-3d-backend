@@ -23,6 +23,7 @@ export class UsersService {
     'name',
     'email',
     'role',
+    'status',
     'createdAt',
     'updatedAt',
   ];
@@ -73,7 +74,7 @@ export class UsersService {
 
     return {
       users,
-      metadata: {
+      meta: {
         totalItems,
         totalPages,
       },

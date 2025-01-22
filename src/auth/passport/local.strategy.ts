@@ -15,6 +15,13 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    if (user.status === 'pending') {
+      throw new UnauthorizedException('Please verify your email address');
+    } else if (user.status === 'blocked') {
+      throw new UnauthorizedException('Your account has been blocked');
+    }
+
     return user;
   }
 }
