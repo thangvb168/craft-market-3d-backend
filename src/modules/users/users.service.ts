@@ -9,20 +9,13 @@ import bmq from '@/common/utils/bmq';
 import { SignupAuthDto } from '@/auth/dto/signup-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as dayjs from 'dayjs';
-import { MailerService } from '@nestjs-modules/mailer';
-import {
-  LOGO_URL,
-  PRIVACY_POLICY_URL,
-  SUPPORT_URL,
-  TERMS_URL,
-  VERIFICATION_URL,
-} from '@/common/constants';
+import { MailService } from '@/modules/mail/mail.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
-    private mailerService: MailerService,
+    private mailService: MailService,
   ) {}
 
   publicField: string[] = [
@@ -169,22 +162,7 @@ export class UsersService {
       throw new BadRequestException('User not found or not updated');
     }
 
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Confirm your email',
-      text: "Welcome to Craft Market 3D! Let's confirm your email address.",
-      template: 'register.hbs',
-      context: {
-        userName: updatedUser.name,
-        verificationToken: codeId,
-        verificationLink: `${VERIFICATION_URL}/${codeId}`,
-        logoUrl: LOGO_URL,
-        currentYear: new Date().getFullYear(),
-        privacyPolicyUrl: PRIVACY_POLICY_URL,
-        termsUrl: TERMS_URL,
-        supportUrl: SUPPORT_URL,
-      },
-    });
+    await this.mailService.sendMailVerifyToken(email, codeId, updatedUser.name);
 
     return {
       codeId,
@@ -269,22 +247,7 @@ export class UsersService {
       throw new BadRequestException('User not created');
     }
 
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Confirm your email',
-      text: "Welcome to Craft Market 3D! Let's confirm your email address.",
-      template: 'register.hbs',
-      context: {
-        userName: name,
-        verificationToken: codeId,
-        verificationLink: `${VERIFICATION_URL}/${codeId}`,
-        logoUrl: LOGO_URL,
-        currentYear: new Date().getFullYear(),
-        privacyPolicyUrl: PRIVACY_POLICY_URL,
-        termsUrl: TERMS_URL,
-        supportUrl: SUPPORT_URL,
-      },
-    });
+    await this.mailService.sendMailVerifyToken(email, codeId, name);
 
     let user = {};
     this.publicField.forEach((field) => {
