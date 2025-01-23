@@ -1,19 +1,19 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersService } from '@/modules/users/users.service';
-import { JwtService } from '@nestjs/jwt';
 import { comparePassword } from '@/common/utils/bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import { RefreshAuthDto } from './dto/refresh-auth.dto';
 import { VerifyEmailDto } from './dto/verify-email-auth.dto';
 import * as dayjs from 'dayjs';
+import { TokensService } from '@/modules/tokens/tokens.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
     private configService: ConfigService,
+    private tokensService: TokensService,
   ) {}
 
   async validateUser(email: string, pass: string) {
@@ -32,22 +32,12 @@ export class AuthService {
 
   async login(user: any) {
     const payload = { email: user.email, sub: user._id };
+
+    const tokens = await this.tokensService.generatePairToken(payload);
+
     return {
       user,
-      tokens: {
-        accessToken: await this.jwtService.signAsync(payload, {
-          expiresIn: this.configService.get<string>(
-            'JWT_ACCESS_TOKEN_EXPIRES_IN',
-          ),
-          secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
-        }),
-        refreshToken: await this.jwtService.signAsync(payload, {
-          expiresIn: this.configService.get<string>(
-            'JWT_REFRESH_TOKEN_EXPIRES_IN',
-          ),
-          secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
-        }),
-      },
+      tokens,
     };
   }
 
@@ -64,13 +54,10 @@ export class AuthService {
 
     const payload = { email, sub: id };
 
+    const accessToken = await this.tokensService.generateAccessToken(payload);
+
     return {
-      accessToken: await this.jwtService.signAsync(payload, {
-        expiresIn: this.configService.get<string>(
-          'JWT_ACCESS_TOKEN_EXPIRES_IN',
-        ),
-        secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
-      }),
+      accessToken,
     };
   }
 
@@ -114,5 +101,9 @@ export class AuthService {
     const updatedUser = await this.usersService.activeAccountByEmail(email);
 
     return updatedUser;
+  }
+
+  async logout(userId: string) {
+    await this.tokensService.deleteToken(userId);
   }
 }

@@ -25,6 +25,8 @@ export class AuthController {
   async login(@Request() req, @Response({ passthrough: true }) res) {
     const { user, tokens } = await this.authService.login(req.user);
 
+    console.log('Tokens:', tokens);
+
     res.cookie('access_token', tokens.accessToken, {
       httpOnly: true,
     });
@@ -70,7 +72,9 @@ export class AuthController {
 
   @Post('logout')
   @ResponseMessage('Logout successfully')
-  async logout(@Response({ passthrough: true }) res) {
+  async logout(@Request() req, @Response({ passthrough: true }) res) {
+    await this.authService.logout(req.user._id);
+
     res.clearCookie('access_token');
     res.clearCookie('refresh_token', {
       path: '/api/v1/auth/refresh',
