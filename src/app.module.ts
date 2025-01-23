@@ -42,11 +42,17 @@ import { RolesGuard } from '@/guards/roles.guard';
           from: configService.get<string>('MAIL_FROM'),
         },
         // preview: true,
-        // template: {
-        dir: join(__dirname, 'mail', 'templates'),
-        adapter: new HandlebarsAdapter(),
-        options: {
-          strict: true,
+        template: {
+          dir: join(__dirname, 'mail', 'templates'),
+          adapter: new HandlebarsAdapter(
+            {},
+            {
+              inlineCssEnabled: false,
+            },
+          ),
+          options: {
+            strict: true,
+          },
         },
       }),
       inject: [ConfigService],

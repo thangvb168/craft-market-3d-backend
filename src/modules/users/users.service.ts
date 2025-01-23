@@ -10,6 +10,13 @@ import { SignupAuthDto } from '@/auth/dto/signup-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as dayjs from 'dayjs';
 import { MailerService } from '@nestjs-modules/mailer';
+import {
+  LOGO_URL,
+  PRIVACY_POLICY_URL,
+  SUPPORT_URL,
+  TERMS_URL,
+  VERIFICATION_URL,
+} from '@/common/constants';
 
 @Injectable()
 export class UsersService {
@@ -128,6 +135,85 @@ export class UsersService {
     return user.password;
   }
 
+  async findTokenByEmail(email: string) {
+    const emailToken = await this.userModel
+      .findOne({ email })
+      .select(['codeId', 'codeExpired'])
+      .lean();
+
+    if (!emailToken) {
+      throw new BadRequestException('User not found');
+    }
+
+    return emailToken;
+  }
+
+  async renewTokenByEmail(email: string) {
+    const codeId = uuidv4();
+
+    const updatedUser = await this.userModel
+      .findOneAndUpdate(
+        {
+          email,
+        },
+        {
+          codeId,
+          codeExpired: dayjs().add(1, 'day'),
+        },
+        { new: true },
+      )
+      .select(this.publicField)
+      .lean();
+
+    if (!updatedUser) {
+      throw new BadRequestException('User not found or not updated');
+    }
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Confirm your email',
+      text: "Welcome to Craft Market 3D! Let's confirm your email address.",
+      template: 'register.hbs',
+      context: {
+        userName: updatedUser.name,
+        verificationToken: codeId,
+        verificationLink: `${VERIFICATION_URL}/${codeId}`,
+        logoUrl: LOGO_URL,
+        currentYear: new Date().getFullYear(),
+        privacyPolicyUrl: PRIVACY_POLICY_URL,
+        termsUrl: TERMS_URL,
+        supportUrl: SUPPORT_URL,
+      },
+    });
+
+    return {
+      codeId,
+    };
+  }
+
+  async activeAccountByEmail(email: string) {
+    const updatedUser = await this.userModel
+      .findOneAndUpdate(
+        {
+          email,
+        },
+        {
+          status: 'active',
+          codeExpired: null,
+          codeId: null,
+        },
+        { new: true },
+      )
+      .select(this.publicField)
+      .lean();
+
+    if (!updatedUser) {
+      throw new BadRequestException('User not found or not updated');
+    }
+
+    return updatedUser;
+  }
+
   async update(updateUserDto: UpdateUserDto) {
     const { _id, name, phone, address, avatar } = updateUserDto;
 
@@ -184,24 +270,27 @@ export class UsersService {
     }
 
     await this.mailerService.sendMail({
-      to: 'bathangvu@gmail.com',
+      to: email,
       subject: 'Confirm your email',
       text: "Welcome to Craft Market 3D! Let's confirm your email address.",
       template: 'register.hbs',
       context: {
         userName: name,
         verificationToken: codeId,
-        verificationLink: `https://yourapp.com/verify/${codeId}`,
-        logoUrl: 'https://yourapp.com/logo.png',
+        verificationLink: `${VERIFICATION_URL}/${codeId}`,
+        logoUrl: LOGO_URL,
         currentYear: new Date().getFullYear(),
-        privacyPolicyUrl: 'https://yourapp.com/privacy',
-        termsUrl: 'https://yourapp.com/terms',
-        supportUrl: 'https://yourapp.com/support',
+        privacyPolicyUrl: PRIVACY_POLICY_URL,
+        termsUrl: TERMS_URL,
+        supportUrl: SUPPORT_URL,
       },
     });
 
-    return {
-      _id: newUser._id,
-    };
+    let user = {};
+    this.publicField.forEach((field) => {
+      user[field] = newUser[field];
+    });
+
+    return user;
   }
 }

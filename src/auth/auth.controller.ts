@@ -81,6 +81,20 @@ export class AuthController {
     };
   }
 
+  @Public()
+  @Post('verify-email')
+  @ResponseMessage('Verify email successfully')
+  async verifyEmail(@Body() body) {
+    return this.authService.verifyEmail(body);
+  }
+
+  @Public()
+  @Post('renew-token')
+  @ResponseMessage('Renew token successfully')
+  async renewToken(@Body() body) {
+    return this.authService.renewToken(body.email);
+  }
+
   @Get('profile')
   @ResponseMessage('Get profile successfully')
   getProfile(@Request() req) {

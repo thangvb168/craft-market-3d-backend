@@ -5,6 +5,8 @@ import { comparePassword } from '@/common/utils/bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import { RefreshAuthDto } from './dto/refresh-auth.dto';
+import { VerifyEmailDto } from './dto/verify-email-auth.dto';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class AuthService {
@@ -70,5 +72,47 @@ export class AuthService {
         secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
       }),
     };
+  }
+
+  async renewToken(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.status !== 'pending') {
+      throw new BadRequestException('User already activated');
+    }
+
+    await this.usersService.renewTokenByEmail(email);
+
+    return {
+      success: true,
+    };
+  }
+
+  async verifyEmail({ email, token }: VerifyEmailDto) {
+    const existUser = await this.usersService.findByEmail(email);
+    if (!existUser) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (existUser.status !== 'pending') {
+      throw new BadRequestException('User already activated');
+    }
+
+    const existToken = await this.usersService.findTokenByEmail(email);
+
+    if (dayjs().isAfter(dayjs(existToken.codeExpired))) {
+      throw new BadRequestException('Token expired');
+    }
+
+    if (existToken.codeId !== token) {
+      throw new BadRequestException('Invalid token');
+    }
+
+    const updatedUser = await this.usersService.activeAccountByEmail(email);
+
+    return updatedUser;
   }
 }
