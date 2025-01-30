@@ -10,6 +10,7 @@ import { SignupAuthDto } from '@/auth/dto/signup-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as dayjs from 'dayjs';
 import { MailService } from '@/modules/mail/mail.service';
+import { isPhoneNumber } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +23,8 @@ export class UsersService {
     '_id',
     'name',
     'email',
+    'avatar',
+    'phone',
     'role',
     'status',
     'createdAt',
@@ -221,13 +224,18 @@ export class UsersService {
   }
 
   async handleRegister(signupAuthDto: SignupAuthDto) {
-    const { name, email, password } = signupAuthDto;
+    const { name, email, password, avatar, phone } = signupAuthDto;
 
     const isEmailExist = await this.userModel.findOne({ email });
     if (isEmailExist) {
       throw new BadRequestException(
         'Email already exists! Please use another email',
       );
+    }
+
+    if (phone) {
+      if (!isPhoneNumber(phone, 'VN'))
+        throw new BadRequestException('Phone number is invalid');
     }
 
     const hashPw = hashPassword(password);
@@ -238,6 +246,8 @@ export class UsersService {
       name,
       email,
       password: hashPw,
+      avatar,
+      phone,
       status: 'pending',
       codeId,
       codeExpired: dayjs().add(1, 'day'),

@@ -106,4 +106,18 @@ export class AuthService {
   async logout(userId: string) {
     await this.tokensService.deleteToken(userId);
   }
+
+  // PROFILE
+  async updateProfile(userId: string, profile: any) {
+    const updateProfile = {
+      ...profile,
+      _id: userId,
+    };
+
+    await this.usersService.update(updateProfile);
+
+    return {
+      success: true,
+    };
+  }
 }

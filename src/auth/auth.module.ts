@@ -7,9 +7,10 @@ import { LocalStrategy } from './passport/local.strategy';
 import { JwtStrategy } from './passport/jwt.strategy';
 import { RefreshTokenStrategy } from './passport/refresh-token.strategy';
 import { TokensModule } from '@/modules/tokens/tokens.module';
+import { CloudinaryModule } from '@/modules/cloudinary/cloudinary.module';
 
 @Module({
-  imports: [UsersModule, PassportModule, TokensModule],
+  imports: [UsersModule, PassportModule, TokensModule, CloudinaryModule],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy, RefreshTokenStrategy],
   exports: [AuthService],
